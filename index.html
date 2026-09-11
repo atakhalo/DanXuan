@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>丹阁 · 玄幻丹药经营</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <div id="app">
+    <header id="hud-wrap">
+      <div id="hud"></div>
+      <div id="hud-tools">
+        <button class="btn ghost" id="btn-guide">玩法</button>
+        <button class="btn ghost" id="btn-reset">重开</button>
+      </div>
+    </header>
+    <div id="body">
+      <main id="stage">
+        <nav id="tabs"></nav>
+        <div id="view"></div>
+      </main>
+      <aside id="right">
+        <div id="logbox"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="modal-layer" class="hidden"></div>
+  <div id="toasts"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/systems.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>
