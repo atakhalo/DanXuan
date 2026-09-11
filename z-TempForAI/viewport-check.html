@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>丹阁 · 手机视口自检</title>
+  <!-- 加载游戏样式表只为读出 --dange-css-ver（判断手机上是不是最新 CSS）；随之而来的全局样式由下面这层 <style> 覆盖 -->
+  <link rel="stylesheet" href="../css/style.css" onerror="window.__vhCssMissing=1">
+  <style>
+    /* 覆盖游戏样式表的影响：本页只要「白底 + 可滚动」 */
+    html, body { height: auto; overflow: auto; }
+    body {
+      background: #f7f6f0; color: #2f3835;
+      margin: 0; padding: 16px 14px 30px;
+      font: 15px/1.75 "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: .06em; color: #2a6058; }
+    .vh-sub { margin: 0 0 14px; font-size: 12.5px; color: #8d9691; }
+
+    .vh-verdict { padding: 13px 15px; border-radius: 10px; font-weight: 700; margin-bottom: 14px; font-size: 16px; }
+    .vh-verdict.yes { background: #e8f3f0; border: 1px solid #b9dcd0; color: #2f7d6a; }
+    .vh-verdict.mid { background: #f9f2dd; border: 1px solid #e0cd9c; color: #8a6a12; }
+    .vh-verdict.no { background: #f8ebe8; border: 1px solid #e2b6b0; color: #b4483d; }
+
+    table { width: 100%; border-collapse: collapse; background: #fffefb; border: 1px solid #e4e9e4; border-radius: 9px; overflow: hidden; font-size: 14.5px; }
+    td { padding: 9px 12px; border-bottom: 1px solid #eef1ee; vertical-align: top; }
+    td:first-child { color: #8d9691; width: 54%; }
+    td b { font-size: 16px; }
+    tr:last-child td { border-bottom: 0; }
+    tr.vh-sep td { background: #f2f7f4; color: #2a6058; font-size: 12.5px; letter-spacing: .1em; padding: 5px 12px; }
+
+    .vh-hit { color: #2f7d6a; font-weight: 700; }
+    .vh-miss { color: #b0b8b3; }
+    .vh-bad { color: #b4483d; font-weight: 700; }
+
+    .vh-block { margin-top: 14px; padding: 12px 14px; background: #fffefb; border: 1px solid #e4e9e4; border-radius: 9px; font-size: 13.5px; line-height: 1.8; color: #5a6560; }
+    .vh-block b { color: #2a6058; }
+    .vh-block ol { margin: 8px 0 0; padding-left: 1.35em; }
+    .vh-block li { margin-bottom: 8px; }
+    .vh-block li:last-child { margin-bottom: 0; }
+
+    .vh-probe { height: 12px; border-radius: 6px; background: #cdd9d3; margin-top: 16px; }
+    .vh-probe-label { margin-top: 6px; font-size: 12.5px; color: #8d9691; text-align: center; }
+    @media (max-width: 940px) { .vh-probe { background: #e0cd9c; } }
+    @media (max-width: 820px), (pointer: coarse) and (max-width: 1100px), (max-width: 1000px) and (max-height: 500px) { .vh-probe { background: #2f7d6a; } }
+  </style>
+</head>
+
+<body>
+  <h1>丹阁 · 手机视口自检</h1>
+  <p class="vh-sub">在同一台手机上、用打开游戏的同一个浏览器打开这一页，才知道游戏的判断结果。</p>
+
+  <div id="vh-verdict" class="vh-verdict"></div>
+  <table>
+    <tbody id="vh-rows"></tbody>
+  </table>
+
+  <div class="vh-probe"></div>
+  <div class="vh-probe-label">色条：灰＝桌面布局　黄＝只收窄右栏　绿＝手机版布局</div>
+
+  <div class="vh-block" id="vh-tips"></div>
+
+  <p class="vh-sub" style="margin-top:16px">
+    <a href="../index.html" style="color:#2a6058">打开游戏 →</a>
+  </p>
+
+  <script>
+    (function () {
+      var Q_PHONE = '(max-width: 820px), (pointer: coarse) and (max-width: 1100px), (max-width: 1000px) and (max-height: 500px)';
+      var Q_LAND = '(max-width: 1000px) and (max-height: 500px), (pointer: coarse) and (orientation: landscape) and (max-height: 620px)';
+
+      function render() {
+        var W = window.innerWidth, H = window.innerHeight;
+        var dpr = window.devicePixelRatio || 1;
+        var sc = window.screen || {};
+        var q = function (s) { return window.matchMedia(s).matches; };
+
+        var m940 = q('(max-width: 940px)');
+        var m820 = q('(max-width: 820px)');
+        var mCoarse = q('(pointer: coarse)');
+        var mTouchWide = mCoarse && q('(max-width: 1100px)');
+        var mShort = q('(max-width: 1000px) and (max-height: 500px)');
+        var mPhone = q(Q_PHONE);
+        var mLand = q(Q_LAND);
+        var portrait = q('(orientation: portrait)');
+
+        // 读游戏样式表里的版本号：旧版 CSS 没有这个变量
+        var ver = '';
+        try {
+          ver = (getComputedStyle(document.documentElement).getPropertyValue('--dange-css-ver') || '').trim();
+        } catch (e) { }
+        var cssState = window.__vhCssMissing ? 'missing' : (ver ? 'ok' : 'old');
+
+        var v = document.getElementById('vh-verdict');
+        if (mPhone) {
+          v.className = 'vh-verdict yes';
+          v.textContent = '✓ 游戏会启用手机版布局'
+            + (m820 ? '' : mCoarse ? '（靠"触摸设备"条件）' : '（靠"矮屏"兜底条件）');
+        } else if (m940) {
+          v.className = 'vh-verdict mid';
+          v.textContent = '△ 只会收窄右栏，未进手机版（视口宽 ' + W + 'px，要 ≤ 820px）';
+        } else {
+          v.className = 'vh-verdict no';
+          v.textContent = '✗ 被判为桌面端（视口宽 ' + W + 'px）';
+        }
+
+        function row(k, val) { return '<tr><td>' + k + '</td><td>' + val + '</td></tr>'; }
+        function flag(ok) { return ok ? '<span class="vh-hit">命中</span>' : '<span class="vh-miss">未命中</span>'; }
+        function sep(t) { return '<tr class="vh-sep"><td colspan="2">' + t + '</td></tr>'; }
+
+        document.getElementById('vh-rows').innerHTML =
+          sep('视口') +
+          row('视口宽度（CSS px）<br><span style="font-size:12px">物理宽度 ÷ DPR，断点比的就是它</span>', '<b>' + W + '</b> px') +
+          row('视口高度（CSS px）', '<b>' + H + '</b> px') +
+          row('设备像素比 DPR', '<b>' + dpr + '</b>') +
+          row('物理像素 = 视口 × DPR', '<b>' + Math.round(W * dpr) + ' × ' + Math.round(H * dpr) + '</b>') +
+          row('screen.width × screen.height', (sc.width || '?') + ' × ' + (sc.height || '?') + ' px') +
+          row('屏幕方向', portrait ? '竖屏' : '横屏') +
+          sep('设备能力（分手机/电脑看这里，不看宽度）') +
+          row('主输入设备 pointer', mCoarse
+            ? '<b>coarse</b> —— 手指/触摸笔'
+            : '<b>fine</b> —— 鼠标/触摸板') +
+          row('能否悬停 hover', q('(hover: none)') ? '不能悬停（典型触摸设备）' : '能悬停') +
+          sep('游戏的三个断点') +
+          row('① 宽度 ≤ 940px（右栏收窄）', flag(m940)) +
+          row('② 宽度 ≤ 820px（手机版）', flag(m820)) +
+          row('③ 触摸设备 且 宽度 ≤ 1100px（手机版）', flag(mTouchWide)) +
+          row('④ 宽度 ≤1000px 且 高 ≤500px（兜底）', flag(mShort)) +
+          row('横屏专用规则（收起见闻栏）', flag(mLand)) +
+          sep('手机上的游戏文件') +
+          row('css/style.css 版本', cssState === 'missing'
+            ? '<span class="vh-bad">文件不存在</span>'
+            : cssState === 'ok'
+              ? '<span class="vh-hit">最新（含手机版样式）</span>'
+              : '<span class="vh-bad">旧版（没有手机版样式）</span>');
+
+        var tips = [];
+        if (cssState === 'missing') {
+          tips.push('<b>找不到 ../css/style.css</b> —— 手机上的文件夹不完整。把电脑上的整个项目文件夹重新拷过去，别只拷 index.html。');
+        } else if (cssState === 'old') {
+          tips.push('<b>手机上的 CSS 是旧版</b>（没有手机版样式）—— 这就是"没效果"的直接原因。把整个文件夹重新拷一次，再用无痕窗口打开（避开缓存）。');
+        } else if (mPhone) {
+          tips.push('断点、文件都没问题，<b>游戏应该已经进了手机版布局</b>：单栏、见闻缩到底部一条、标签页变窄、战斗按钮 2×2 大按钮。');
+          tips.push('若游戏仍是电脑版的宽扁样子：先确认打开的是<b>这个文件夹里</b>的 index.html（手机上可能存了不止一份），再强制刷新一次。');
+        } else if (portrait && mCoarse) {
+          tips.push('你是触摸设备、竖屏握持，视口却宽达 ' + W + 'px（手机竖屏通常是 360~430px），超出了 1100px 档。');
+          tips.push('视口被撑这么宽，多半是浏览器开着 <b>「电脑版网站 / 请求桌面站点」</b>。关掉它，或换用系统自带浏览器直接打开游戏文件。');
+        } else if (portrait) {
+          tips.push('竖屏窗口 + 鼠标/触摸板：这是桌面浏览器的窄高窗口（宽 ' + W + 'px），游戏走"右栏收窄"这一档，属于预期行为。');
+        } else if (W > 1100) {
+          tips.push('视口 ' + W + 'px，宽屏 —— 游戏按桌面版布局。想在电脑上看手机版效果，把窗口缩到 820px 以下即可。');
+        } else {
+          tips.push('视口 ' + W + 'px 落在 940~1100px 之间、且不是触摸设备：游戏只收窄右栏。折叠屏展开态目前正是落在这一档。');
+        }
+        tips.push('拷文件时注意：改完代码后<b>整个文件夹</b>都要重拷；用局域网 http 打开的话，注意浏览器缓存（无痕窗口最省事）。');
+
+        document.getElementById('vh-tips').innerHTML =
+          '<b>怎么读：</b><ol><li>' + tips.join('</li><li>') + '</li></ol>';
+      }
+
+      render();
+      // 转屏 / 改窗口大小时重新判定（手机上把屏幕转过来是最常见的动作）
+      window.addEventListener('resize', render);
+      window.addEventListener('orientationchange', function () { setTimeout(render, 150); });
+    })();
+  </script>
+</body>
+
+</html>
