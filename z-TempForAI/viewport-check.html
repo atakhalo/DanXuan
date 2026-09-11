@@ -45,7 +45,8 @@
     .vh-probe { height: 12px; border-radius: 6px; background: #cdd9d3; margin-top: 16px; }
     .vh-probe-label { margin-top: 6px; font-size: 12.5px; color: #8d9691; text-align: center; }
     @media (max-width: 940px) { .vh-probe { background: #e0cd9c; } }
-    @media (max-width: 820px), (pointer: coarse) and (max-width: 1100px), (max-width: 1000px) and (max-height: 500px) { .vh-probe { background: #2f7d6a; } }
+    /* 与 css/style.css 的竖屏断点保持一致 */
+    @media (orientation: portrait) and (max-width: 1100px), (pointer: coarse) and (max-width: 1100px), (max-width: 1000px) and (max-height: 500px) { .vh-probe { background: #2f7d6a; } }
   </style>
 </head>
 
@@ -59,7 +60,7 @@
   </table>
 
   <div class="vh-probe"></div>
-  <div class="vh-probe-label">色条：灰＝桌面布局　黄＝只收窄右栏　绿＝手机版布局</div>
+  <div class="vh-probe-label">色条：灰＝桌面版式　黄＝只收窄右栏　绿＝竖屏版式（含方向盘）</div>
 
   <div class="vh-block" id="vh-tips"></div>
 
@@ -69,8 +70,9 @@
 
   <script>
     (function () {
-      var Q_PHONE = '(max-width: 820px), (pointer: coarse) and (max-width: 1100px), (max-width: 1000px) and (max-height: 500px)';
+      var Q_PHONE = '(orientation: portrait) and (max-width: 1100px), (pointer: coarse) and (max-width: 1100px), (max-width: 1000px) and (max-height: 500px)';
       var Q_LAND = '(max-width: 1000px) and (max-height: 500px), (pointer: coarse) and (orientation: landscape) and (max-height: 620px)';
+      var lastKey = null;
 
       function render() {
         var W = window.innerWidth, H = window.innerHeight;
@@ -79,7 +81,7 @@
         var q = function (s) { return window.matchMedia(s).matches; };
 
         var m940 = q('(max-width: 940px)');
-        var m820 = q('(max-width: 820px)');
+        var mPortrait = q('(orientation: portrait) and (max-width: 1100px)');
         var mCoarse = q('(pointer: coarse)');
         var mTouchWide = mCoarse && q('(max-width: 1100px)');
         var mShort = q('(max-width: 1000px) and (max-height: 500px)');
@@ -97,11 +99,11 @@
         var v = document.getElementById('vh-verdict');
         if (mPhone) {
           v.className = 'vh-verdict yes';
-          v.textContent = '✓ 游戏会启用手机版布局'
-            + (m820 ? '' : mCoarse ? '（靠"触摸设备"条件）' : '（靠"矮屏"兜底条件）');
+          v.textContent = '✓ 游戏会启用竖屏版式'
+            + (mPortrait ? '（靠"竖屏"条件）' : mCoarse ? '（靠"触摸设备"条件）' : '（靠"矮屏"兜底条件）');
         } else if (m940) {
           v.className = 'vh-verdict mid';
-          v.textContent = '△ 只会收窄右栏，未进手机版（视口宽 ' + W + 'px，要 ≤ 820px）';
+          v.textContent = '△ 只会收窄右栏，未进竖屏版式（横屏且非触摸设备）';
         } else {
           v.className = 'vh-verdict no';
           v.textContent = '✗ 被判为桌面端（视口宽 ' + W + 'px）';
@@ -126,45 +128,55 @@
           row('能否悬停 hover', q('(hover: none)') ? '不能悬停（典型触摸设备）' : '能悬停') +
           sep('游戏的三个断点') +
           row('① 宽度 ≤ 940px（右栏收窄）', flag(m940)) +
-          row('② 宽度 ≤ 820px（手机版）', flag(m820)) +
-          row('③ 触摸设备 且 宽度 ≤ 1100px（手机版）', flag(mTouchWide)) +
-          row('④ 宽度 ≤1000px 且 高 ≤500px（兜底）', flag(mShort)) +
+          row('② 竖屏 且 宽 ≤ 1100px（竖屏版式）', flag(mPortrait)) +
+          row('③ 触摸设备 且 宽 ≤ 1100px（竖屏版式）', flag(mTouchWide)) +
+          row('④ 宽 ≤1000px 且 高 ≤500px（兜底）', flag(mShort)) +
           row('横屏专用规则（收起见闻栏）', flag(mLand)) +
           sep('手机上的游戏文件') +
           row('css/style.css 版本', cssState === 'missing'
             ? '<span class="vh-bad">文件不存在</span>'
             : cssState === 'ok'
-              ? '<span class="vh-hit">最新（含手机版样式）</span>'
-              : '<span class="vh-bad">旧版（没有手机版样式）</span>');
+              ? '<span class="vh-hit">最新（含竖屏版式与方向盘）</span>'
+              : '<span class="vh-bad">旧版（没有竖屏版式）</span>');
 
         var tips = [];
         if (cssState === 'missing') {
           tips.push('<b>找不到 ../css/style.css</b> —— 手机上的文件夹不完整。把电脑上的整个项目文件夹重新拷过去，别只拷 index.html。');
         } else if (cssState === 'old') {
-          tips.push('<b>手机上的 CSS 是旧版</b>（没有手机版样式）—— 这就是"没效果"的直接原因。把整个文件夹重新拷一次，再用无痕窗口打开（避开缓存）。');
+          tips.push('<b>手机上的 CSS 是旧版</b>（没有竖屏版式）—— 这就是"没效果"的直接原因。把整个文件夹重新拷一次，再用无痕窗口打开（避开缓存）。');
         } else if (mPhone) {
-          tips.push('断点、文件都没问题，<b>游戏应该已经进了手机版布局</b>：单栏、见闻缩到底部一条、标签页变窄、战斗按钮 2×2 大按钮。');
+          tips.push('断点、文件都没问题，<b>游戏应该已经进了竖屏版式</b>：单栏、见闻缩到底部一条、秘境地图下方有一组方向键、战斗按钮 2×2。');
           tips.push('若游戏仍是电脑版的宽扁样子：先确认打开的是<b>这个文件夹里</b>的 index.html（手机上可能存了不止一份），再强制刷新一次。');
         } else if (portrait && mCoarse) {
           tips.push('你是触摸设备、竖屏握持，视口却宽达 ' + W + 'px（手机竖屏通常是 360~430px），超出了 1100px 档。');
           tips.push('视口被撑这么宽，多半是浏览器开着 <b>「电脑版网站 / 请求桌面站点」</b>。关掉它，或换用系统自带浏览器直接打开游戏文件。');
         } else if (portrait) {
-          tips.push('竖屏窗口 + 鼠标/触摸板：这是桌面浏览器的窄高窗口（宽 ' + W + 'px），游戏走"右栏收窄"这一档，属于预期行为。');
+          tips.push('竖屏窗口（宽 ' + W + 'px）—— 游戏会走竖屏版式。这也正是"在电脑上模拟手机"的直观做法：把窗口拉竖。');
         } else if (W > 1100) {
-          tips.push('视口 ' + W + 'px，宽屏 —— 游戏按桌面版布局。想在电脑上看手机版效果，把窗口缩到 820px 以下即可。');
+          tips.push('视口 ' + W + 'px，宽屏 —— 游戏按桌面版布局。想在电脑上看竖屏版式，把窗口拉成竖的即可。');
         } else {
-          tips.push('视口 ' + W + 'px 落在 940~1100px 之间、且不是触摸设备：游戏只收窄右栏。折叠屏展开态目前正是落在这一档。');
+          tips.push('视口 ' + W + 'px 且是横屏、非触摸设备：游戏只收窄右栏。折叠屏展开态（横屏）目前正是落在这一档。');
         }
         tips.push('拷文件时注意：改完代码后<b>整个文件夹</b>都要重拷；用局域网 http 打开的话，注意浏览器缓存（无痕窗口最省事）。');
 
         document.getElementById('vh-tips').innerHTML =
           '<b>怎么读：</b><ol><li>' + tips.join('</li><li>') + '</li></ol>';
+
+        lastKey = key();
+      }
+
+      function key() {
+        return window.innerWidth + 'x' + window.innerHeight + 'x'
+          + (window.matchMedia('(orientation: portrait)').matches ? 'P' : 'L');
       }
 
       render();
-      // 转屏 / 改窗口大小时重新判定（手机上把屏幕转过来是最常见的动作）
+      // 转屏 / 改窗口大小时重新判定（手机上把屏幕转过来是最常见的动作）。
+      // 后台页面可能被浏览器节流、收不到 resize，所以再用定时器兜一层底。
+      document.addEventListener('visibilitychange', render);
       window.addEventListener('resize', render);
       window.addEventListener('orientationchange', function () { setTimeout(render, 150); });
+      setInterval(function () { if (key() !== lastKey) render(); }, 400);
     })();
   </script>
 </body>

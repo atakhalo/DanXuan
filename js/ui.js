@@ -768,7 +768,16 @@
         <div class="canvas-box">
           <canvas id="dg-canvas" width="${22 * 42}" height="${14 * 42}"></canvas>
         </div>
-        <div class="explore-hint">方向键 / WASD 移动，或点击相邻格子　｜　灵草可采、宝箱可开、灵泉回血、金色光圈即出口　｜　行动力耗尽可返回或就地歇息</div>
+        <div class="dpad" id="dpad">
+          <button class="dpad-btn" data-dir="left" aria-label="向左走">◀</button>
+          <button class="dpad-btn" data-dir="up" aria-label="向上走">▲</button>
+          <button class="dpad-btn" data-dir="down" aria-label="向下走">▼</button>
+          <button class="dpad-btn" data-dir="right" aria-label="向右走">▶</button>
+        </div>
+        <div class="explore-hint">
+          <span class="hint-desk">方向键 / WASD 移动，或点击相邻格子</span><span
+            class="hint-port">用下方方向键移动，或点击相邻格子</span>　｜　灵草可采、宝箱可开、灵泉回血、金色光圈即出口　｜　行动力耗尽可返回或就地歇息
+        </div>
       </div>`;
     const lv = $('btn-leave');
     if (lv) lv.onclick = () => G.UI.confirm('撤退', '现在返回丹阁？收获会保留。', () => G.Scene.leave());
@@ -777,6 +786,12 @@
       `就当这一趟没进去过，重新寻路进去。<br>
        <span class="dim">地形与灵材重新生成，行动力恢复如初；这一趟已采到的药材与灵石会一并退回。</span>`,
       () => G.Scene.resetDungeon());
+    const dpad = $('dpad');
+    if (dpad) {
+      dpad.querySelectorAll('[data-dir]').forEach(b => {
+        b.onclick = () => G.Scene.move(b.dataset.dir);
+      });
+    }
     UI.syncExplore();
   };
 

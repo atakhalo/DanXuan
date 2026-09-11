@@ -21,6 +21,9 @@
   let raf = null, lastT = 0;
   let cv = null, ctx = null;
   let bound = false;
+  let resizeBound = false;
+  let fitTimer = null;
+  let lastFit = '';
 
   /* ---------------- 地图生成 ---------------- */
   const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -286,6 +289,12 @@
       bound = true;
     }
     bindPointer();
+    lastFit = '';                                  // 新 canvas 元素没有内联尺寸，得重新算
+    fitCanvas();
+    if (!resizeBound) { window.addEventListener('resize', fitCanvas); resizeBound = true; }
+    // 定时兜底：窗口 resize 只覆盖"改窗口"，地址栏收放、分栏拖动等布局变化它收不到
+    if (fitTimer) clearInterval(fitTimer);
+    fitTimer = setInterval(fitCanvas, 800);
     if (raf) cancelAnimationFrame(raf);
     lastT = performance.now();
     raf = requestAnimationFrame(loop);
@@ -296,11 +305,36 @@
     st.active = false;
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     if (bound) { document.removeEventListener('keydown', onKey); bound = false; }
+    if (resizeBound) { window.removeEventListener('resize', fitCanvas); resizeBound = false; }
+    if (fitTimer) { clearInterval(fitTimer); fitTimer = null; }
     const res = { gain: st.gain, insight: st.lootInsight };
     st = null;
     bindPointerOff();
     G.Sys.finishDungeon(res);
     if (reason === 'down') G.UI.toast('你负伤退出了秘境。', 'bad');
+  }
+
+  /**
+   * 地图等比（22:14）缩放到底座 .canvas-box 的可用空间：宽度够就铺满，高度不够就以高度为准。
+   *
+   * 为什么不靠纯 CSS：22:14 的地图在横屏/扁窗口里按宽度铺满会很高（894px 宽 → 553px 高），
+   * 超出可视区就得滚动才看得全。CSS 的 max-height 只能压高度、不能让宽度跟着缩，比例就废了；
+   * 而元素盒必须与绘制内容严格一致 —— 点击换算（bindPointer）用的是 getBoundingClientRect。
+   */
+  function fitCanvas() {
+    if (!cv) return;
+    const box = cv.parentElement;
+    if (!box) return;
+    const availW = box.clientWidth, availH = box.clientHeight;
+    if (availW <= 0 || availH <= 0) return;
+    const ratio = MW / MH;
+    let w = availW, h = w / ratio;
+    if (h > availH) { h = availH; w = h * ratio; }
+    w = Math.floor(w); h = Math.floor(h);
+    if (w + 'x' + h === lastFit) return;          // 尺寸没变就别动 DOM
+    lastFit = w + 'x' + h;
+    cv.style.width = w + 'px';
+    cv.style.height = h + 'px';
   }
 
   function bindPointer() {
@@ -329,6 +363,14 @@
     else return;
     e.preventDefault();
     tryMove(st.player.x + dx, st.player.y + dy);
+  }
+
+  /** 按方向走一步，供竖屏方向盘调用（键盘走 onKey） */
+  const STEP = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  function move(dir) {
+    if (!st || !st.active) return;
+    const d = STEP[dir];
+    if (d) tryMove(st.player.x + d[0], st.player.y + d[1]);
   }
 
   /* ---------------- 移动与踩格 ---------------- */
@@ -818,7 +860,7 @@
     resetDungeon,
     isActive: () => !!(st && st.active),
     getState: () => st,
-    playerAttack, useItemInBattle, flee,
+    move, playerAttack, useItemInBattle, flee,
     getBattle: () => st && st.battle,
     MAX: { CELL, MW, MH },
     // 供离线测试：验证地形连通性
