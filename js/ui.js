@@ -767,7 +767,6 @@
         </div>
         <div class="canvas-box">
           <canvas id="dg-canvas" width="${22 * 42}" height="${14 * 42}"></canvas>
-          <div id="battle-layer" class="hidden"></div>
         </div>
         <div class="explore-hint">方向键 / WASD 移动，或点击相邻格子　｜　灵草可采、宝箱可开、灵泉回血、金色光圈即出口　｜　行动力耗尽可返回或就地歇息</div>
       </div>`;
