@@ -8,3 +8,8 @@
 ![订单](./img/订单.webp)
 ![炼丹](./img/炼丹.webp)
 ![秘境](./img/秘境探索.webp)
+
+手机截图
+![订单](./img/订单mb.webp)
+![炼丹](./img/炼丹mb.webp)
+![秘境](./img/秘境mb.webp)
